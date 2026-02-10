@@ -60,12 +60,15 @@ export async function deliverWebReply(params: {
     throw lastErr;
   };
 
+  const quoteOpts = msg.id ? { quotedMessageId: msg.id } : undefined;
+
   // Text-only replies
   if (mediaList.length === 0 && textChunks.length) {
     const totalChunks = textChunks.length;
     for (const [index, chunk] of textChunks.entries()) {
       const chunkStarted = Date.now();
-      await sendWithRetry(() => msg.reply(chunk), "text");
+      // Quote-reply only the first chunk to the triggering message
+      await sendWithRetry(() => msg.reply(chunk, index === 0 ? quoteOpts : undefined), "text");
       if (!skipLog) {
         const durationMs = Date.now() - chunkStarted;
         whatsappOutboundLog.debug(
@@ -103,35 +106,46 @@ export async function deliverWebReply(params: {
         );
         logVerbose(`Web auto-reply media source: ${mediaUrl} (kind ${media.kind})`);
       }
+      // Quote-reply only the first media item to the triggering message
+      const mediaQuoteOpts = index === 0 ? quoteOpts : undefined;
       if (media.kind === "image") {
         await sendWithRetry(
           () =>
-            msg.sendMedia({
-              image: media.buffer,
-              caption,
-              mimetype: media.contentType,
-            }),
+            msg.sendMedia(
+              {
+                image: media.buffer,
+                caption,
+                mimetype: media.contentType,
+              },
+              mediaQuoteOpts,
+            ),
           "media:image",
         );
       } else if (media.kind === "audio") {
         await sendWithRetry(
           () =>
-            msg.sendMedia({
-              audio: media.buffer,
-              ptt: true,
-              mimetype: media.contentType,
-              caption,
-            }),
+            msg.sendMedia(
+              {
+                audio: media.buffer,
+                ptt: true,
+                mimetype: media.contentType,
+                caption,
+              },
+              mediaQuoteOpts,
+            ),
           "media:audio",
         );
       } else if (media.kind === "video") {
         await sendWithRetry(
           () =>
-            msg.sendMedia({
-              video: media.buffer,
-              caption,
-              mimetype: media.contentType,
-            }),
+            msg.sendMedia(
+              {
+                video: media.buffer,
+                caption,
+                mimetype: media.contentType,
+              },
+              mediaQuoteOpts,
+            ),
           "media:video",
         );
       } else {
@@ -139,12 +153,15 @@ export async function deliverWebReply(params: {
         const mimetype = media.contentType ?? "application/octet-stream";
         await sendWithRetry(
           () =>
-            msg.sendMedia({
-              document: media.buffer,
-              fileName,
-              caption,
-              mimetype,
-            }),
+            msg.sendMedia(
+              {
+                document: media.buffer,
+                fileName,
+                caption,
+                mimetype,
+              },
+              mediaQuoteOpts,
+            ),
           "media:document",
         );
       }

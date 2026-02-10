@@ -285,11 +285,38 @@ export async function monitorWebInbox(options: {
           logVerbose(`Presence update failed: ${String(err)}`);
         }
       };
-      const reply = async (text: string) => {
-        await sock.sendMessage(chatJid, { text });
+      const reply = async (text: string, options?: { quotedMessageId?: string }) => {
+        const sendOpts = options?.quotedMessageId
+          ? {
+              quoted: {
+                key: {
+                  remoteJid: chatJid,
+                  id: options.quotedMessageId,
+                  fromMe: false,
+                  participant: msg.key?.participant ?? undefined,
+                },
+              } as import("@whiskeysockets/baileys").WAMessage,
+            }
+          : undefined;
+        await sock.sendMessage(chatJid, { text }, sendOpts);
       };
-      const sendMedia = async (payload: AnyMessageContent) => {
-        await sock.sendMessage(chatJid, payload);
+      const sendMedia = async (
+        payload: AnyMessageContent,
+        options?: { quotedMessageId?: string },
+      ) => {
+        const sendOpts = options?.quotedMessageId
+          ? {
+              quoted: {
+                key: {
+                  remoteJid: chatJid,
+                  id: options.quotedMessageId,
+                  fromMe: false,
+                  participant: msg.key?.participant ?? undefined,
+                },
+              } as import("@whiskeysockets/baileys").WAMessage,
+            }
+          : undefined;
+        await sock.sendMessage(chatJid, payload, sendOpts);
       };
       const timestamp = messageTimestampMs;
       const mentionedJids = extractMentionedJids(msg.message as proto.IMessage | undefined);
