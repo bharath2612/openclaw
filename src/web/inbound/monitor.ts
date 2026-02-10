@@ -295,6 +295,7 @@ export async function monitorWebInbox(options: {
                   fromMe: false,
                   participant: msg.key?.participant ?? undefined,
                 },
+                message: msg.message ?? {},
               } as import("@whiskeysockets/baileys").WAMessage,
             }
           : undefined;
@@ -313,6 +314,7 @@ export async function monitorWebInbox(options: {
                   fromMe: false,
                   participant: msg.key?.participant ?? undefined,
                 },
+                message: msg.message ?? {},
               } as import("@whiskeysockets/baileys").WAMessage,
             }
           : undefined;
