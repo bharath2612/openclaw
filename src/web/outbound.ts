@@ -19,6 +19,8 @@ export async function sendMessageWhatsApp(
     mediaUrl?: string;
     gifPlayback?: boolean;
     accountId?: string;
+    /** Message ID to quote-reply to in WhatsApp. */
+    quotedMessageId?: string;
   },
 ): Promise<{ messageId: string; toJid: string }> {
   let text = body;
@@ -68,9 +70,10 @@ export async function sendMessageWhatsApp(
     const hasExplicitAccountId = Boolean(options.accountId?.trim());
     const accountId = hasExplicitAccountId ? resolvedAccountId : undefined;
     const sendOptions: ActiveWebSendOptions | undefined =
-      options.gifPlayback || accountId
+      options.gifPlayback || accountId || options.quotedMessageId
         ? {
             ...(options.gifPlayback ? { gifPlayback: true } : {}),
+            ...(options.quotedMessageId ? { quotedMessageId: options.quotedMessageId } : {}),
             accountId,
           }
         : undefined;

@@ -5,7 +5,7 @@ import { toWhatsappJid } from "../../utils.js";
 
 export function createWebSendApi(params: {
   sock: {
-    sendMessage: (jid: string, content: AnyMessageContent) => Promise<unknown>;
+    sendMessage: (jid: string, content: AnyMessageContent, options?: object) => Promise<unknown>;
     sendPresenceUpdate: (presence: WAPresence, jid?: string) => Promise<unknown>;
   };
   defaultAccountId: string;
@@ -48,7 +48,11 @@ export function createWebSendApi(params: {
       } else {
         payload = { text };
       }
-      const result = await params.sock.sendMessage(jid, payload);
+      const quotedMessageId = sendOptions?.quotedMessageId;
+      const sendMsgOpts = quotedMessageId
+        ? { quoted: { key: { remoteJid: jid, id: quotedMessageId, fromMe: false } } }
+        : undefined;
+      const result = await params.sock.sendMessage(jid, payload, sendMsgOpts);
       const accountId = sendOptions?.accountId ?? params.defaultAccountId;
       recordChannelActivity({
         channel: "whatsapp",

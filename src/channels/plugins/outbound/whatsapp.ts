@@ -57,17 +57,18 @@ export const whatsappOutbound: ChannelOutboundAdapter = {
       error: missingTargetError("WhatsApp", "<E.164|group JID> or channels.whatsapp.allowFrom[0]"),
     };
   },
-  sendText: async ({ to, text, accountId, deps, gifPlayback }) => {
+  sendText: async ({ to, text, accountId, deps, gifPlayback, replyToId }) => {
     const send =
       deps?.sendWhatsApp ?? (await import("../../../web/outbound.js")).sendMessageWhatsApp;
     const result = await send(to, text, {
       verbose: false,
       accountId: accountId ?? undefined,
       gifPlayback,
+      quotedMessageId: replyToId ?? undefined,
     });
     return { channel: "whatsapp", ...result };
   },
-  sendMedia: async ({ to, text, mediaUrl, accountId, deps, gifPlayback }) => {
+  sendMedia: async ({ to, text, mediaUrl, accountId, deps, gifPlayback, replyToId }) => {
     const send =
       deps?.sendWhatsApp ?? (await import("../../../web/outbound.js")).sendMessageWhatsApp;
     const result = await send(to, text, {
@@ -75,6 +76,7 @@ export const whatsappOutbound: ChannelOutboundAdapter = {
       mediaUrl,
       accountId: accountId ?? undefined,
       gifPlayback,
+      quotedMessageId: replyToId ?? undefined,
     });
     return { channel: "whatsapp", ...result };
   },
