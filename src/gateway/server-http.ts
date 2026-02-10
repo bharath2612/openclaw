@@ -56,6 +56,7 @@ type HookDispatchers = {
     sessionKey: string;
     deliver: boolean;
     channel: HookMessageChannel;
+    agentId?: string;
     to?: string;
     model?: string;
     thinking?: string;
@@ -249,6 +250,7 @@ export function createHooksRequestHandler(
             wakeMode: mapped.action.wakeMode,
             sessionKey: mapped.action.sessionKey ?? "",
             deliver: resolveHookDeliver(mapped.action.deliver),
+            agentId: mapped.action.agentId,
             channel,
             to: mapped.action.to,
             model: mapped.action.model,

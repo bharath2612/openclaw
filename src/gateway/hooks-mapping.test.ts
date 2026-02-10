@@ -152,6 +152,31 @@ describe("hooks mapping", () => {
     }
   });
 
+  it("passes agentId from mapping", async () => {
+    const mappings = resolveHookMappings({
+      mappings: [
+        {
+          id: "soham",
+          match: { path: "soham" },
+          action: "agent",
+          agentId: "soham",
+          messageTemplate: "Build event: {{event}}",
+        },
+      ],
+    });
+    const result = await applyHookMappings(mappings, {
+      payload: { event: "build.succeeded" },
+      headers: {},
+      url: new URL("http://127.0.0.1:18789/hooks/soham"),
+      path: "soham",
+    });
+    expect(result?.ok).toBe(true);
+    if (result?.ok && result.action?.kind === "agent") {
+      expect(result.action.agentId).toBe("soham");
+      expect(result.action.message).toBe("Build event: build.succeeded");
+    }
+  });
+
   it("rejects missing message", async () => {
     const mappings = resolveHookMappings({
       mappings: [{ match: { path: "noop" }, action: "agent" }],

@@ -20,6 +20,8 @@ export type HookMappingConfig = {
   deliver?: boolean;
   /** DANGEROUS: Disable external content safety wrapping for this hook. */
   allowUnsafeExternalContent?: boolean;
+  /** Route this hook to a specific agent by ID. */
+  agentId?: string;
   channel?:
     | "last"
     | "whatsapp"

@@ -36,6 +36,7 @@ export function createGatewayHooksRequestHandler(params: {
     sessionKey: string;
     deliver: boolean;
     channel: HookMessageChannel;
+    agentId?: string;
     to?: string;
     model?: string;
     thinking?: string;
@@ -48,6 +49,7 @@ export function createGatewayHooksRequestHandler(params: {
     const now = Date.now();
     const job: CronJob = {
       id: jobId,
+      agentId: value.agentId,
       name: value.name,
       enabled: true,
       createdAtMs: now,

@@ -142,6 +142,7 @@ export type HookAgentPayload = {
   sessionKey: string;
   deliver: boolean;
   channel: HookMessageChannel;
+  agentId?: string;
   to?: string;
   model?: string;
   thinking?: string;
@@ -206,6 +207,9 @@ export function normalizeAgentPayload(
   if (modelRaw !== undefined && !model) {
     return { ok: false, error: "model required" };
   }
+  const agentIdRaw = payload.agentId;
+  const agentId =
+    typeof agentIdRaw === "string" && agentIdRaw.trim() ? agentIdRaw.trim() : undefined;
   const deliver = resolveHookDeliver(payload.deliver);
   const thinkingRaw = payload.thinking;
   const thinking =
@@ -224,6 +228,7 @@ export function normalizeAgentPayload(
       sessionKey,
       deliver,
       channel,
+      agentId,
       to,
       model,
       thinking,

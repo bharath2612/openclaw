@@ -126,6 +126,23 @@ describe("gateway hooks helpers", () => {
     const bad = normalizeAgentPayload({ message: "yo", channel: "sms" });
     expect(bad.ok).toBe(false);
   });
+
+  test("normalizeAgentPayload extracts agentId", () => {
+    const result = normalizeAgentPayload(
+      { message: "hello", agentId: "soham" },
+      { idFactory: () => "fixed" },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.agentId).toBe("soham");
+    }
+
+    const noAgent = normalizeAgentPayload({ message: "hello" }, { idFactory: () => "fixed" });
+    expect(noAgent.ok).toBe(true);
+    if (noAgent.ok) {
+      expect(noAgent.value.agentId).toBeUndefined();
+    }
+  });
 });
 
 const emptyRegistry = createTestRegistry([]);
