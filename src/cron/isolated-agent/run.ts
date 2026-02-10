@@ -523,7 +523,10 @@ export async function runCronIsolatedAgentTurn(params: {
     }
     // Shared subagent announce flow is text-based; keep direct outbound delivery
     // for media/channel payloads so structured content is preserved.
-    if (deliveryPayloadHasStructuredContent) {
+    // Hook-triggered jobs also use direct delivery to avoid the announce flow's
+    // second model call (which may respond NO_REPLY for build notifications).
+    const isHookTriggered = baseSessionKey.startsWith("hook:");
+    if (deliveryPayloadHasStructuredContent || (isHookTriggered && synthesizedText)) {
       try {
         await deliverOutboundPayloads({
           cfg: cfgWithAgentDefaults,
