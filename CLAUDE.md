@@ -1,28 +1,134 @@
-# CLAUDE.md — Project Guidelines for AI Assistants
+# CLAUDE.md
 
-## Changelog Rule
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Every time you make a change (feature, fix, refactor, docs, etc.), you MUST add an entry to `CHANGELOG.md` before committing.**
+> **See also: `AGENTS.md`** for detailed operational guidelines (commit workflow, multi-agent safety, VM ops, release process, naming conventions, docs linking, security tips).
+
+## MANDATORY: Changelog on Every Change
+
+**Every single time you make a change — feature, fix, refactor, docs, ANYTHING — you MUST add an entry to `CHANGELOG.md` before committing. No exceptions.**
 
 - Add entries under the current date section (format: `## YYYY.M.D`)
 - If today's section doesn't exist, create it at the top (below the header)
 - Use subsections: `### Added`, `### Fixes`, `### Changed`, `### Docs`, `### Learnings`
-- Include a short summary of what changed and why
+- Include a timestamp and a brief summary of what changed and why
 - Include any learnings or insights discovered during the work
-- Include the timestamp in the entry
+- Always stage `CHANGELOG.md` alongside your code changes
 
-## Commit Workflow
+## Build & Dev Commands
 
-1. Make the code changes
-2. Run tests to verify nothing broke
-3. Add a changelog entry with date, time, summary, and learnings
-4. Stage all relevant files (including CHANGELOG.md)
-5. Commit with a clear conventional commit message
-6. Push only when explicitly asked
+```bash
+# Pre-commit check (format + typecheck + lint)
+pnpm check
 
-## Code Style
+# TypeScript type-check only
+pnpm tsgo
 
-- Follow existing patterns in the codebase
-- TypeScript with strict types
-- Tests alongside source files (`*.test.ts`)
-- Conventional commits: `feat()`, `fix()`, `docs()`, `refactor()`
+# Build (compile TS, bundle UI, generate DTS)
+pnpm build
+
+# Lint and format
+pnpm lint                     # Oxlint with type awareness
+pnpm lint:fix                 # Lint + auto-fix + format
+pnpm format                   # Oxfmt (import sorting)
+
+# Run CLI in dev (no build needed, uses tsx)
+pnpm openclaw <command>       # e.g. pnpm openclaw gateway run
+pnpm dev                      # alias
+
+# Gateway dev
+pnpm gateway:watch            # Auto-reload on TS changes
+pnpm gateway:dev              # Gateway with channels skipped
+```
+
+## Testing
+
+```bash
+pnpm test                     # All unit tests (vitest, parallel forks)
+pnpm test src/path/file.test.ts   # Single test file
+pnpm test --grep "pattern"    # Tests matching pattern
+pnpm test:watch               # Watch mode
+pnpm test:coverage            # V8 coverage (70% thresholds)
+pnpm test:e2e                 # End-to-end tests
+pnpm test:live                # Live tests (needs OPENCLAW_LIVE_TEST=1)
+```
+
+Tests are colocated: `feature.ts` + `feature.test.ts`. E2E tests use `*.e2e.test.ts`. Framework is Vitest with forks pool, 120s timeout.
+
+## Committing
+
+Use `scripts/committer "<msg>" <file...>` instead of manual `git add`/`git commit`. Conventional commit format: `feat(scope): message`, `fix(scope): message`, `docs(scope): message`. Always update `CHANGELOG.md` (see rule above).
+
+## Architecture Overview
+
+OpenClaw is a multi-channel AI gateway. CLI/UI connects to a WebSocket gateway that orchestrates agents and messaging channels.
+
+```
+CLI / Web UI
+    │ WebSocket (MessagePack RPC)
+    ▼
+┌─ Gateway (Control Plane) ─────────────────────────┐
+│  HTTP server: /hooks/*, /v1/chat/completions,      │
+│               /v1/responses, /canvas-host           │
+│  RPC methods: agent.*, chat.*, send.*, cron.*,     │
+│               sessions.*, channels.*, config.*      │
+│  Subsystems: sessions, config, auth, cron, hooks   │
+└────┬───────────────────────────────────┬───────────┘
+     │                                   │
+     ▼                                   ▼
+  Agents (Pi Runtime)              Channels
+  • Tool execution (bash,          • WhatsApp, Telegram,
+    browser, web search,             Discord, Slack, Signal,
+    memory, canvas, cron)            iMessage, LINE, Google Chat
+  • Model fallback chains          • Extensions: Matrix, MS Teams,
+  • Session transcripts              Zalo, BlueBubbles, etc.
+  • Sandboxed execution            • Auto-reply formatting
+```
+
+### Key Subsystems
+
+**Gateway** (`src/gateway/`): Central WebSocket + HTTP server. `server.impl.ts` starts Express + WS. `server-http.ts` handles REST endpoints. `server-methods/` implements RPC methods. `protocol/` is MessagePack-based binary RPC.
+
+**Agents** (`src/agents/`): Pi-based AI agents with streaming tool execution. `agent-scope.ts` resolves agent config (workspace, model, skills). `pi-embedded-runner/` orchestrates the agent loop: resolve model → build session → call LLM → stream response → execute tools → handle compaction. Tools live in `agents/tools/`.
+
+**Hooks/Webhooks** (`src/gateway/hooks.ts`, `hooks-mapping.ts`): External HTTP webhooks → agent messages. Token-authenticated. Mapping system with presets (gmail, github) and custom mappings with `{{mustache}}` templates. Transform modules for advanced payload processing. Security wrapping via `src/security/external-content.ts` — webhook sources get lighter warnings than email sources.
+
+**Channels** (`src/channels/`, `src/telegram/`, `src/discord/`, etc.): Plugin-based messaging integrations. Each provides adapters: messaging, outbound, security, commands, mentions, threads. Registry in `src/channels/registry.ts`. Extensions in `extensions/*/`.
+
+**Config** (`src/config/`): Zod-validated JSON5 config at `~/.openclaw/config.json`. Schema in `zod-schema.ts`. Supports `${ENV_VAR}` substitution, file includes, and legacy migration. Split types in `types.*.ts`.
+
+**Sessions** (`src/gateway/session-utils.ts`): Keyed by channel+user (e.g. `telegram:123@user456`). Stored as JSONLines in `~/.openclaw/sessions/`. Write-locked to prevent concurrent modifications. Scope modes: per-sender, global, per-peer, per-channel-peer.
+
+**Cron** (`src/cron/`): Scheduled agent tasks. Jobs defined in config, executed as isolated agent turns with session key `cron:{jobId}`.
+
+**Security** (`src/security/`): External content wrapping with boundary markers. Source-aware: webhooks get `WEBHOOK_CONTENT_WARNING` (lighter, data-encouraging), emails get `SECURITY_NOTICE` (heavy, anti-injection). DM pairing and allowlists in `src/pairing/`.
+
+**Auto-reply** (`src/auto-reply/`): Converts agent responses → channel-specific format. Handles chunking, delivery retry, reaction/typing feedback.
+
+### Webhook → Agent Flow
+
+```
+HTTP POST /hooks/github
+  → token auth (server-http.ts)
+  → mapping resolution (hooks-mapping.ts) — match path, render {{template}}
+  → dispatch to agent (hooks.ts) — create session, queue message
+  → agent run (pi-embedded-runner/) — LLM call with security-wrapped content
+  → auto-reply → channel delivery
+```
+
+### Extension System
+
+Extensions live in `extensions/*/` as workspace packages. Each has its own `package.json` with `openclaw.extensions` field. Plugin-only deps go in the extension `package.json`, not root. Use `devDependencies` or `peerDependencies` for `openclaw` (not `dependencies` — breaks npm install).
+
+## Code Conventions
+
+- **ESM with `.js` extensions** in all imports: `import { x } from "./x.js"`
+- **Strict TypeScript**, avoid `any`. Use Zod for runtime validation.
+- **Named exports** over default exports
+- **Dependency injection** via `createDefaultDeps()` pattern
+- **Files under ~500 LOC** (guideline); split/refactor when clarity improves
+- **Oxlint + Oxfmt** for linting/formatting; run `pnpm check` before commits
+- **Tool schemas**: avoid `Type.Union`/`anyOf`/`oneOf`; use `stringEnum`/`optionalStringEnum` for string lists; keep top-level schema as `type: "object"`
+- **Patched dependencies** (`pnpm.patchedDependencies`) must use exact versions (no `^`/`~`)
+- **CLI progress**: use `src/cli/progress.ts` (osc-progress + clack); don't hand-roll spinners
+- **Never update the Carbon dependency**

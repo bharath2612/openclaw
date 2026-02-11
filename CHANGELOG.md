@@ -6,6 +6,10 @@ Docs: https://docs.openclaw.ai
 
 _15:09 +04_
 
+### Docs
+
+- **CLAUDE.md**: Rewrite with comprehensive architecture overview, build/test/lint commands, key subsystem descriptions (gateway, agents, hooks, channels, config, sessions, cron, security), webhook→agent flow diagram, extension system notes, and code conventions. References `AGENTS.md` for operational guidelines instead of duplicating them.
+
 ### Fixes
 
 - **Hooks/Security**: Fix soham agent generating vague notifications ("unknown branch by someone") by adding source-aware security wrapping. Webhook sources now get a lighter `WEBHOOK_CONTENT_WARNING` (3 lines) that encourages the agent to USE the structured data, while email sources keep the full `SECURITY_NOTICE` (11 lines). Root cause: all `hook:*` sessions were wrapped with the aggressive email warning, causing the LLM to distrust webhook data.
