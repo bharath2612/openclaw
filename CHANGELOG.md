@@ -11,6 +11,7 @@ _15:09 +04_
 - **CLAUDE.md**: Rewrite with comprehensive architecture overview, build/test/lint commands, key subsystem descriptions (gateway, agents, hooks, channels, config, sessions, cron, security), webhook→agent flow diagram, extension system notes, and code conventions. References `AGENTS.md` for operational guidelines instead of duplicating them.
 - **CLAUDE.md**: Add Production Deployment section documenting full VPS infrastructure (lasco-api.prop8t.ai, nginx, docker, agents, SSH access), Cloudflare Worker build notification pipeline (prop8t-deploy-notifier → Queue → Gateway → WhatsApp), team member mapping, and agent-to-group bindings. This serves as persistent memory for future Claude Code sessions.
 - **Claude Code hooks**: Add PreToolUse hook (`.claude/hooks/ensure-changelog.sh`) that blocks git commits unless CHANGELOG.md is staged or modified. Configured in `.claude/settings.json`.
+- **CLAUDE.md**: Add mandatory "Deploy to VPS After Every Push" rule — VPS does not auto-deploy, must SSH pull + rebuild + restart after every `git push`.
 
 ### Fixes
 

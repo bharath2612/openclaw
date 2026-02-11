@@ -170,6 +170,20 @@ WhatsApp delivery via Baileys → group messages
 
 The Cloudflare Worker bypasses the gateway's mapping system — it sends payloads with explicit `agentId`, `deliver`, `channel`, and `to` fields directly. The gateway's `hooks-mapping.ts` presets/mappings are used for other webhook sources (e.g., raw GitHub webhooks).
 
+### MANDATORY: Deploy to VPS After Every Push
+
+**Every time you push code to GitHub, you MUST deploy to the VPS. The VPS runs OpenClaw in Docker — it does NOT auto-deploy. If you skip this, production stays on stale code.**
+
+```bash
+ssh root@46.224.209.36 'cd /root/openclaw && git pull && docker compose build openclaw-gateway && docker compose up -d openclaw-gateway'
+```
+
+Verify it's running:
+
+```bash
+ssh root@46.224.209.36 'cd /root/openclaw && docker compose logs --tail 10 openclaw-gateway'
+```
+
 ### SSH Access
 
 ```bash
