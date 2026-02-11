@@ -1,6 +1,7 @@
 import type { loadConfig } from "../../../config/config.js";
 import type { MentionConfig } from "../mentions.js";
 import type { WebInboundMsg } from "../types.js";
+import { resolveAgentIdentity } from "../../../agents/identity.js";
 import { hasControlCommand } from "../../../auto-reply/command-detection.js";
 import { parseActivationCommand } from "../../../auto-reply/group-activation.js";
 import { recordPendingHistoryEntryIfEnabled } from "../../../auto-reply/reply/history.js";
@@ -110,10 +111,20 @@ export function applyGroupGating(params: {
   const replySenderE164 = params.msg.replyToSenderE164
     ? normalizeE164(params.msg.replyToSenderE164)
     : null;
-  const implicitMention = Boolean(
+  const jidMatch = Boolean(
     (selfJid && replySenderJid && selfJid === replySenderJid) ||
     (selfE164 && replySenderE164 && selfE164 === replySenderE164),
   );
+  // When replying to our number, verify the quoted message belongs to THIS agent
+  // by checking for the agent's emoji in the quoted body. This prevents cross-agent
+  // activation when multiple agents share the same WhatsApp number.
+  let implicitMention = jidMatch;
+  if (jidMatch && params.msg.replyToBody != null) {
+    const agentEmoji = resolveAgentIdentity(params.cfg, params.agentId)?.emoji?.trim();
+    if (agentEmoji) {
+      implicitMention = params.msg.replyToBody.includes(agentEmoji);
+    }
+  }
   const mentionGate = resolveMentionGating({
     requireMention,
     canDetectMention: true,

@@ -4,11 +4,33 @@ Docs: https://docs.openclaw.ai
 
 ## 2026.2.11
 
-_15:09 +04_ · _16:35 +04 debug CF Worker event payload (attempt 2)_ · _17:15 +04 CF Worker debug & CLAUDE.md learnings_
+_15:09 +04_ · _16:35 +04 debug CF Worker event payload (attempt 2)_ · _17:15 +04 CF Worker debug & CLAUDE.md learnings_ · _21:30 +04 Sharky FPL knowledge_ · _23:45 +04 FPL GW26/27 knowledge update_ · _22:05 +04 FPL team created & lineup set via API_ · _22:30 +04 FPL skills & AGENTS.md for Sharky_ · _22:45 +04 League join API + skill update_ · _23:15 +04 Man City goal monitor deployed_ · _00:25 +04 Fix cross-agent implicit mention_
+
+### Fixes
+
+- **Implicit mention emoji gating** (`group-gating.ts`): When someone replies to a message in a WhatsApp group, the system now checks if the quoted message contains the agent's emoji (🦈 for Sharky, 🧞 for Soham) before activating. Previously, all agents sharing the same WhatsApp number would activate on any reply to any agent's message.
 
 ### Docs
 
 - **CLAUDE.md**: Add "CF Worker Deployment & Debugging Rules" section with deployment commands, debug technique (raw JSON → LLM), learnings about `buildTriggerMetadata` population, and single-group delivery note.
+
+### Added
+
+- **Sharky FPL Manager** (VPS): Added `FPL.md` to Sharky's workspace with full FPL team management knowledge — API endpoints, research methodology, expert sources (FPL Harry, FPL Focal, The FPL Wire), squad-building rules, search query templates, and team management workflow.
+- **Sharky FPL script** (VPS): New `fetch-fpl-full.sh` script that pulls comprehensive FPL data — top players by position with stats, injuries/doubtful list, most transferred in/out, gameweek deadlines. Supports position filtering and limit args.
+- **Sharky AGENTS.md** (VPS): Updated with FPL management section, browser tool reference, new script paths, and weekly FPL workflow.
+- **Sharky FPL GW26/27 Knowledge** (VPS): Updated `FPL.md` with GW26 DGW analysis (Arsenal/Wolves picks, TC Gabriel consensus, chip strategy), GW27 fixtures table, proposed 99.9M starting squad (3-5-2: Haaland + B.Fernandes premiums, Arsenal triple-up, budget enablers), GW31 blank exposure plan.
+- **FPL Team Created** (API): Created FPL team "Sharky Blue" (entry 12923351) and set lineup via FPL API using `x-api-authorization` Bearer token. 3-5-2: Verbruggen; Gabriel, Timber, Senesi; B.Fernandes(VC), Rice, Rogers, Enzo, Wilson; Haaland(C), Thiago. Bench: Pecsi, Hill, Acheampong, Barnes. 98.3M value, 1.7M bank.
+- **Sharky FPL Skills** (VPS): Created 2 workspace skills — `fpl` (analysis, advice, live tracking, no auth) and `fpl-manager` (transfers, lineup, captain, chips, leagues, needs auth token). Includes helper scripts: `fpl-token-check.sh`, `fpl-lineup.sh`, `fpl-transfer.sh`. Updated `AGENTS.md` with full FPL management section (team identity, skill refs, current squad, auth token flow, weekly workflow, FPL personality guidelines).
+- **FPL League Join** (API + VPS): Joined CITYULTRAS league (ID 612621) via `POST /api/leagues-private/join/` with auto-join code `ei5t4k`. Updated `fpl-manager` skill with full Leagues section (join private/public, create, view standings, view my leagues, leave). Updated `FPL.md` with league info.
+- **Man City Goal Monitor** (VPS): Deployed `goal-monitor.sh` to VPS — polls ESPN every 20s, detects kickoff/goals/halftime/fulltime, sends webhook to Sharky who reacts in character on WhatsApp. Includes goalscorer detail fetching from ESPN summary API. First match: Man City vs Fulham (2026.2.11, 19:30 UTC). PID 311995, logs at `/root/goal-monitor.log`.
+
+### Learnings
+
+- FPL uses PingOne SSO — auth token is in custom `x-api-authorization` header (not standard `Authorization`). ROPC grant not supported, must get token from browser.
+- Lineup updates: POST to `/api/my-team/{entry_id}/` with picks array (positions 1-11 starting, 12-15 bench), captain/VC flags, and `chip: null`.
+- Mid-season team entry gets "unlimited" transfer status (like permanent wildcard) — can rebuild squad freely before next deadline.
+- FPL league join endpoints are NOT documented publicly. Found them by grepping the JS bundle (`index-*.js`): private = `POST /api/leagues-private/join/`, public = `POST /api/leagues-public/join/`, create = `POST /api/leagues-classic/`.
 
 ### Changed
 

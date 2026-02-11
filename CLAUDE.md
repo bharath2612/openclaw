@@ -105,6 +105,8 @@ CLI / Web UI
 
 **Auto-reply** (`src/auto-reply/`): Converts agent responses → channel-specific format. Handles chunking, delivery retry, reaction/typing feedback.
 
+**Group mention gating** (`src/web/auto-reply/monitor/group-gating.ts`): Controls when agents activate in group chats. Agents activate on: explicit @mention, body matching agent name/emoji pattern, or replying to the agent's message (implicit mention). **Emoji-gated implicit mention**: when multiple agents share one WhatsApp number, replying to an agent message only activates the agent whose emoji (e.g. 🦈 Sharky, 🧞 Soham) appears in the quoted message body. If no emoji is configured, falls back to JID match (old behavior).
+
 ### Webhook → Agent Flow
 
 ```
