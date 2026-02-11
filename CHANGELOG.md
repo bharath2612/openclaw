@@ -4,9 +4,23 @@ Docs: https://docs.openclaw.ai
 
 ## 2026.2.11
 
-_15:09 +04_ · _16:30 +04 debug CF Worker event payload_
+_15:09 +04_ · _16:35 +04 debug CF Worker event payload (attempt 2)_ · _17:15 +04 CF Worker debug & CLAUDE.md learnings_
 
 ### Docs
+
+- **CLAUDE.md**: Add "CF Worker Deployment & Debugging Rules" section with deployment commands, debug technique (raw JSON → LLM), learnings about `buildTriggerMetadata` population, and single-group delivery note.
+
+### Changed
+
+- **prop8t-deploy-notifier** (VPS): Reduced Soham delivery from 2 groups to 1 (SOHAM_GROUP_1 only).
+
+### Learnings
+
+- CF Worker `buildTriggerMetadata` may not match documented schema at runtime — sending raw JSON as the LLM prompt is an effective debug technique to discover actual field paths.
+- `buildTriggerMetadata` is only populated for `push_event` triggers. Manual/dashboard deploys produce empty metadata ("unknown by someone").
+- CF Worker on VPS has no stored wrangler credentials — always needs `CLOUDFLARE_API_TOKEN` env var for deploy/tail.
+
+### Docs (prior)
 
 - **CLAUDE.md**: Rewrite with comprehensive architecture overview, build/test/lint commands, key subsystem descriptions (gateway, agents, hooks, channels, config, sessions, cron, security), webhook→agent flow diagram, extension system notes, and code conventions. References `AGENTS.md` for operational guidelines instead of duplicating them.
 - **CLAUDE.md**: Add Production Deployment section documenting full VPS infrastructure (lasco-api.prop8t.ai, nginx, docker, agents, SSH access), Cloudflare Worker build notification pipeline (prop8t-deploy-notifier → Queue → Gateway → WhatsApp), team member mapping, and agent-to-group bindings. This serves as persistent memory for future Claude Code sessions.

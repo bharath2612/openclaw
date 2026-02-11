@@ -145,8 +145,10 @@ Soham is a build notification character — "Senior Dev / DevOps" persona who ro
 
 ### Build Notification Pipeline
 
+**IMPORTANT: The product (`prop8t-worker`) is a Cloudflare WORKER — NOT Cloudflare Pages. Never confuse these. Build/deploy events come from Cloudflare Workers deployments.**
+
 ```
-Cloudflare Pages/Workers Build Event
+Cloudflare Workers deployment event (prop8t-worker deploys)
     │
     ▼
 Cloudflare Queue: "build-notifier"
@@ -156,7 +158,7 @@ CF Worker: prop8t-deploy-notifier (queue consumer)
     │  Source: /root/prop8t-deploy-notifier/ on VPS
     │  - Generates funny prompt based on build status (started/succeeded/failed/canceled)
     │  - Maps git authors to first names via AUTHOR_MAP
-    │  - Sends to both soham WhatsApp groups
+    │  - Sends to SOHAM_GROUP_1 (main prop8t group only)
     ▼
 POST https://lasco-api.prop8t.ai/hooks/
     │  Bearer token: prop8t-webhook-secret-2026
@@ -169,6 +171,26 @@ WhatsApp delivery via Baileys → group messages
 ```
 
 The Cloudflare Worker bypasses the gateway's mapping system — it sends payloads with explicit `agentId`, `deliver`, `channel`, and `to` fields directly. The gateway's `hooks-mapping.ts` presets/mappings are used for other webhook sources (e.g., raw GitHub webhooks).
+
+### CF Worker Deployment & Debugging Rules
+
+**Deploying `prop8t-deploy-notifier`** (separate from the openclaw VPS deploy):
+
+```bash
+ssh root@46.224.209.36 'cd /root/prop8t-deploy-notifier && CLOUDFLARE_API_TOKEN=<token> npx wrangler deploy'
+```
+
+- The CF Worker is deployed via `wrangler deploy`, NOT via git push. It lives only on the VPS at `/root/prop8t-deploy-notifier/`.
+- Needs `CLOUDFLARE_API_TOKEN` — no stored credentials on VPS. Token is NOT the same as the webhook token.
+- `wrangler tail` also needs the token: `CLOUDFLARE_API_TOKEN=<token> npx wrangler tail`
+
+**Key learnings (2026.2.11):**
+
+- The `BuildEvent` interface in the CF Worker may not match the actual Cloudflare event payload structure. The documented schema shows `buildTriggerMetadata` nested under `payload`, but the real event may have fields at different paths.
+- **Debug technique**: When `buildTriggerMetadata` fields are empty/missing (causing "unknown by someone" messages), replace `buildPrompt(event)` with `JSON.stringify(event)` and send the raw JSON as the prompt. The LLM will extract the correct info, AND you can see the actual field structure in the WhatsApp output.
+- `buildTriggerMetadata` is only populated for `push_event` triggers (git push via Cloudflare Builds integration). Manual/dashboard/API deploys won't have git metadata.
+- The `author` field in `buildTriggerMetadata` is an **email address** (e.g., `developer@example.com`). The `resolveAuthor()` function strips the domain before matching against `AUTHOR_MAP`.
+- Soham currently sends to **one group only** (`SOHAM_GROUP_1`), not both.
 
 ### MANDATORY: Deploy to VPS After Every Push
 
