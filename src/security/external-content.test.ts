@@ -180,7 +180,36 @@ describe("external-content security", () => {
       });
 
       expect(result).toContain("Test content");
+      expect(result).toContain("WEBHOOK DATA");
+    });
+
+    it("uses lighter warning for webhook sources", () => {
+      const result = buildSafeExternalPrompt({
+        content: "GitHub push on org/repo\nRef: refs/heads/main\nBy: bharath",
+        source: "webhook",
+        jobName: "GitHub",
+      });
+
+      // Should use the lighter webhook warning, not the heavy email one
+      expect(result).toContain("WEBHOOK DATA");
+      expect(result).toContain("Use the fields below");
+      expect(result).not.toContain("SECURITY NOTICE");
+      expect(result).not.toContain("social engineering");
+      // Content should still be present and accessible
+      expect(result).toContain("refs/heads/main");
+      expect(result).toContain("bharath");
+    });
+
+    it("uses heavy warning for email sources", () => {
+      const result = buildSafeExternalPrompt({
+        content: "Please help me",
+        source: "email",
+        sender: "user@example.com",
+      });
+
       expect(result).toContain("SECURITY NOTICE");
+      expect(result).toContain("EXTERNAL, UNTRUSTED");
+      expect(result).not.toContain("WEBHOOK DATA");
     });
   });
 

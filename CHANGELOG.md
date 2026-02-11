@@ -2,6 +2,31 @@
 
 Docs: https://docs.openclaw.ai
 
+## 2026.2.11
+
+_15:09 +04_
+
+### Fixes
+
+- **Hooks/Security**: Fix soham agent generating vague notifications ("unknown branch by someone") by adding source-aware security wrapping. Webhook sources now get a lighter `WEBHOOK_CONTENT_WARNING` (3 lines) that encourages the agent to USE the structured data, while email sources keep the full `SECURITY_NOTICE` (11 lines). Root cause: all `hook:*` sessions were wrapped with the aggressive email warning, causing the LLM to distrust webhook data.
+- **Hooks**: Remove `{{_payload}}` from the default GitHub preset template to reduce injection surface and token waste. Users can still add it in custom mappings.
+
+### Added
+
+- **Hooks**: Add built-in `github` preset to `hookPresetMappings` with proper field extraction (ref, sender.login, head_commit.message, repository.full_name, compare URL). Session keys deduped via `X-GitHub-Delivery` header.
+- **Hooks**: Add `_payload` special template expression to `resolveTemplateExpr()` for dumping full webhook JSON in custom mappings.
+- **Docs**: Add `docs/agents/soham.md` — Soham agent workflow (build/deploy notifications via GitHub webhooks).
+- **Docs**: Add `docs/agents/sharky.md` — Sharky agent workflow (conversational agent with channel routing).
+- **Docs**: Add `docs/agents/vps-configuration.md` — Complete VPS multi-agent configuration guide with architecture diagram, Docker setup, and troubleshooting.
+- **Project**: Add `CLAUDE.md` with changelog-on-every-change rule for AI assistants.
+
+### Learnings
+
+- **Security wrapping is invisible but critical**: The agent's vague responses weren't caused by missing data — the template was rendering correctly. The real issue was the security wrapper in `external-content.ts` prepending 11 lines of "DON'T TRUST THIS" before the webhook data, making the LLM too cautious to assert facts.
+- **`allowUnsafeExternalContent: true` in a preset is dangerous**: First instinct was to bypass security wrapping entirely. Architectural audit caught that commit messages and branch names are user-controlled fields — bypassing security for a built-in preset would ship a prompt injection vector by default.
+- **Source-aware security is the right abstraction**: Webhooks (token-gated, structured JSON) need a different security posture than emails (anyone can send, free-text). The fix: lighter warning for webhooks that says "use the fields" vs heavy warning for emails that says "don't trust anything."
+- **Always trace the full propagation chain**: Reading just the template rendering wasn't enough. The bug was 4 files downstream: preset → `buildActionFromMapping` → `server-http.ts` → `hooks.ts` → `run.ts` → `wrapExternalContent()`. Every hop matters.
+
 ## 2026.2.9
 
 ### Added

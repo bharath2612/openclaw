@@ -85,7 +85,7 @@ const hookPresetMappings: Record<string, HookMappingConfig[]> = {
       name: "GitHub",
       sessionKey: "hook:github:{{headers.x-github-delivery}}",
       messageTemplate:
-        "GitHub {{headers.x-github-event}} on {{repository.full_name}}\nRef: {{ref}}\nBy: {{sender.login}}\nCommit: {{head_commit.message}}\nCompare: {{compare}}\nPayload: {{_payload}}",
+        "GitHub {{headers.x-github-event}} on {{repository.full_name}}\nRef: {{ref}}\nBy: {{sender.login}}\nCommit: {{head_commit.message}}\nCompare: {{compare}}",
     },
   ],
 };
