@@ -76,6 +76,18 @@ const hookPresetMappings: Record<string, HookMappingConfig[]> = {
         "New email from {{messages[0].from}}\nSubject: {{messages[0].subject}}\n{{messages[0].snippet}}\n{{messages[0].body}}",
     },
   ],
+  github: [
+    {
+      id: "github",
+      match: { path: "github" },
+      action: "agent",
+      wakeMode: "now",
+      name: "GitHub",
+      sessionKey: "hook:github:{{headers.x-github-delivery}}",
+      messageTemplate:
+        "GitHub {{headers.x-github-event}} on {{repository.full_name}}\nRef: {{ref}}\nBy: {{sender.login}}\nCommit: {{head_commit.message}}\nCompare: {{compare}}\nPayload: {{_payload}}",
+    },
+  ],
 };
 
 const transformCache = new Map<string, HookTransformFn>();
@@ -392,6 +404,9 @@ function resolveTemplateExpr(expr: string, ctx: HookMappingContext) {
   }
   if (expr === "now") {
     return new Date().toISOString();
+  }
+  if (expr === "_payload") {
+    return ctx.payload;
   }
   if (expr.startsWith("headers.")) {
     return getByPath(ctx.headers, expr.slice("headers.".length));
