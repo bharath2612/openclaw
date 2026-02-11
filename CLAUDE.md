@@ -175,7 +175,7 @@ The Cloudflare Worker bypasses the gateway's mapping system — it sends payload
 **Every time you push code to GitHub, you MUST deploy to the VPS. The VPS runs OpenClaw in Docker — it does NOT auto-deploy. If you skip this, production stays on stale code.**
 
 ```bash
-ssh root@46.224.209.36 'cd /root/openclaw && git pull && docker compose build openclaw-gateway && docker compose up -d openclaw-gateway'
+ssh root@46.224.209.36 'cd /root/openclaw && git pull && docker build -t openclaw:latest . && docker compose up -d openclaw-gateway'
 ```
 
 Verify it's running:
