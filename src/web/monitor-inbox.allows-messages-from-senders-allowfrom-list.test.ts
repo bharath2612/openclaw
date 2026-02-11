@@ -482,17 +482,21 @@ describe("web monitor inbox", () => {
 
     await listener.sendReaction("12345@g.us", "msg123", "👍", false, "+6421000000");
 
-    expect(sock.sendMessage).toHaveBeenCalledWith("12345@g.us", {
-      react: {
-        text: "👍",
-        key: {
-          remoteJid: "12345@g.us",
-          id: "msg123",
-          fromMe: false,
-          participant: "6421000000@s.whatsapp.net",
+    expect(sock.sendMessage).toHaveBeenCalledWith(
+      "12345@g.us",
+      {
+        react: {
+          text: "👍",
+          key: {
+            remoteJid: "12345@g.us",
+            id: "msg123",
+            fromMe: false,
+            participant: "6421000000@s.whatsapp.net",
+          },
         },
       },
-    });
+      undefined,
+    );
 
     await listener.close();
   });

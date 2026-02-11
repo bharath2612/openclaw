@@ -256,7 +256,7 @@ describe("web auto-reply", () => {
     });
 
     // No implicit responsePrefix.
-    expect(reply).toHaveBeenCalledWith("hello there");
+    expect(reply).toHaveBeenCalledWith("hello there", { quotedMessageId: "msg1" });
     resetLoadConfigMock();
   });
 });

@@ -255,7 +255,7 @@ describe("web auto-reply", () => {
     });
 
     // Reply should have responsePrefix prepended
-    expect(reply).toHaveBeenCalledWith("🦞 hello there");
+    expect(reply).toHaveBeenCalledWith("🦞 hello there", { quotedMessageId: "msg1" });
     resetLoadConfigMock();
   });
   it("applies channel responsePrefix override to replies", async () => {
@@ -293,7 +293,7 @@ describe("web auto-reply", () => {
       sendMedia: vi.fn(),
     });
 
-    expect(reply).toHaveBeenCalledWith("[WA] hello there");
+    expect(reply).toHaveBeenCalledWith("[WA] hello there", { quotedMessageId: "msg1" });
     resetLoadConfigMock();
   });
   it("defaults responsePrefix for self-chat replies when unset", async () => {
@@ -342,7 +342,7 @@ describe("web auto-reply", () => {
       sendMedia: vi.fn(),
     });
 
-    expect(reply).toHaveBeenCalledWith("[Mainbot] hello there");
+    expect(reply).toHaveBeenCalledWith("[Mainbot] hello there", { quotedMessageId: "msg1" });
     resetLoadConfigMock();
   });
   it("does not deliver HEARTBEAT_OK responses", async () => {
@@ -421,7 +421,7 @@ describe("web auto-reply", () => {
     });
 
     // Should not double-prefix
-    expect(reply).toHaveBeenCalledWith("🦞 already prefixed");
+    expect(reply).toHaveBeenCalledWith("🦞 already prefixed", { quotedMessageId: "msg1" });
     resetLoadConfigMock();
   });
 });

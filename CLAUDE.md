@@ -120,6 +120,74 @@ HTTP POST /hooks/github
 
 Extensions live in `extensions/*/` as workspace packages. Each has its own `package.json` with `openclaw.extensions` field. Plugin-only deps go in the extension `package.json`, not root. Use `devDependencies` or `peerDependencies` for `openclaw` (not `dependencies` — breaks npm install).
 
+## Production Deployment (VPS)
+
+OpenClaw runs on a VPS at `46.224.209.36` behind `lasco-api.prop8t.ai`. This is the production environment — do NOT confuse local dev with production.
+
+**Stack:**
+
+- **Nginx** on VPS terminates TLS (Let's Encrypt), routes `/hooks/` → `127.0.0.1:18789` (gateway), `/` → port 3001 (WebSocket)
+- **Docker Compose** runs `openclaw-gateway` (port 18789, `--bind lan`) and `openclaw-cli`
+- **Config** lives at `/root/.openclaw/openclaw.json` on VPS (bind-mounted into container)
+- **Gateway token auth**: `OPENCLAW_GATEWAY_TOKEN` env var in docker-compose
+- **Webhook token**: `prop8t-webhook-secret-2026` (in hooks config)
+
+**Agents on VPS:**
+
+| Agent                | Workspace                         | WhatsApp Groups                                           |
+| -------------------- | --------------------------------- | --------------------------------------------------------- |
+| `blueshark` (Sharky) | `~/.openclaw/workspace-blueshark` | `917977789547-1599546567@g.us`, `120363424174853623@g.us` |
+| `soham` (Soham)      | `~/.openclaw/workspace-soham`     | `120363395222679666@g.us`, `120363424579029844@g.us`      |
+
+Soham is a build notification character — "Senior Dev / DevOps" persona who roasts team members. His personality and build notification playbook are in `~/.openclaw/workspace-soham/SOUL.md` on VPS.
+
+**Team members** (used in author mapping): bharath, vijay (vijay-hozo), nikhil (nikhil raikwar), arun (arun raghav)
+
+### Build Notification Pipeline
+
+```
+Cloudflare Pages/Workers Build Event
+    │
+    ▼
+Cloudflare Queue: "build-notifier"
+    │
+    ▼
+CF Worker: prop8t-deploy-notifier (queue consumer)
+    │  Source: /root/prop8t-deploy-notifier/ on VPS
+    │  - Generates funny prompt based on build status (started/succeeded/failed/canceled)
+    │  - Maps git authors to first names via AUTHOR_MAP
+    │  - Sends to both soham WhatsApp groups
+    ▼
+POST https://lasco-api.prop8t.ai/hooks/
+    │  Bearer token: prop8t-webhook-secret-2026
+    │  Payload: { agentId: 'soham', deliver: true, wakeMode: 'now', channel: 'whatsapp' }
+    ▼
+Nginx → OpenClaw Gateway (Docker, port 18789)
+    │  Routes to soham agent, creates session, runs LLM
+    ▼
+WhatsApp delivery via Baileys → group messages
+```
+
+The Cloudflare Worker bypasses the gateway's mapping system — it sends payloads with explicit `agentId`, `deliver`, `channel`, and `to` fields directly. The gateway's `hooks-mapping.ts` presets/mappings are used for other webhook sources (e.g., raw GitHub webhooks).
+
+### SSH Access
+
+```bash
+ssh root@46.224.209.36           # VPS shell
+# Key paths:
+#   /root/.openclaw/openclaw.json          — main config
+#   /root/.openclaw/workspace-soham/       — soham workspace (AGENTS.md, SOUL.md, scripts/)
+#   /root/.openclaw/workspace-blueshark/   — blueshark workspace
+#   /root/openclaw/docker-compose.yml      — docker services
+#   /root/prop8t-deploy-notifier/          — Cloudflare Worker source
+#   /etc/nginx/sites-enabled/lasco-api     — nginx reverse proxy
+
+# Common operations:
+cd /root/openclaw && docker compose logs --tail 100 openclaw-gateway  # gateway logs
+cd /root/openclaw && docker compose restart openclaw-gateway          # restart gateway
+cat /root/.openclaw/openclaw.json                                     # view config
+```
+
 ## Code Conventions
 
 - **ESM with `.js` extensions** in all imports: `import { x } from "./x.js"`

@@ -136,7 +136,7 @@ describe("partial reply gating", () => {
     const resolverOptions = replyResolver.mock.calls[0]?.[1] ?? {};
     expect("onPartialReply" in resolverOptions).toBe(false);
     expect(reply).toHaveBeenCalledTimes(1);
-    expect(reply).toHaveBeenCalledWith("final reply");
+    expect(reply).toHaveBeenCalledWith("final reply", { quotedMessageId: "m1" });
   });
   it("falls back from empty senderJid to senderE164 for SenderId", async () => {
     const reply = vi.fn().mockResolvedValue(undefined);

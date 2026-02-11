@@ -9,11 +9,15 @@ _15:09 +04_
 ### Docs
 
 - **CLAUDE.md**: Rewrite with comprehensive architecture overview, build/test/lint commands, key subsystem descriptions (gateway, agents, hooks, channels, config, sessions, cron, security), webhook→agent flow diagram, extension system notes, and code conventions. References `AGENTS.md` for operational guidelines instead of duplicating them.
+- **CLAUDE.md**: Add Production Deployment section documenting full VPS infrastructure (lasco-api.prop8t.ai, nginx, docker, agents, SSH access), Cloudflare Worker build notification pipeline (prop8t-deploy-notifier → Queue → Gateway → WhatsApp), team member mapping, and agent-to-group bindings. This serves as persistent memory for future Claude Code sessions.
+- **Claude Code hooks**: Add PreToolUse hook (`.claude/hooks/ensure-changelog.sh`) that blocks git commits unless CHANGELOG.md is staged or modified. Configured in `.claude/settings.json`.
 
 ### Fixes
 
 - **Hooks/Security**: Fix soham agent generating vague notifications ("unknown branch by someone") by adding source-aware security wrapping. Webhook sources now get a lighter `WEBHOOK_CONTENT_WARNING` (3 lines) that encourages the agent to USE the structured data, while email sources keep the full `SECURITY_NOTICE` (11 lines). Root cause: all `hook:*` sessions were wrapped with the aggressive email warning, causing the LLM to distrust webhook data.
 - **Hooks**: Remove `{{_payload}}` from the default GitHub preset template to reduce injection surface and token waste. Users can still add it in custom mappings.
+- **Config/Zod**: Add `agentId: z.string().optional()` to `HookMappingSchema` in `zod-schema.hooks.ts`. Without this, any config with `agentId` in hook mappings would fail Zod strict validation on gateway startup.
+- **WhatsApp tests**: Fix 6 test files (20 assertions) broken by quote-reply feature. `sock.sendMessage()` now takes a third arg (quote opts) and `reply()` takes a second arg (`{ quotedMessageId }`). Tests updated to match new calling convention.
 
 ### Added
 

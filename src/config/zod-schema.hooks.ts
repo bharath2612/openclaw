@@ -17,6 +17,7 @@ export const HookMappingSchema = z
     textTemplate: z.string().optional(),
     deliver: z.boolean().optional(),
     allowUnsafeExternalContent: z.boolean().optional(),
+    agentId: z.string().optional(),
     channel: z
       .union([
         z.literal("last"),
