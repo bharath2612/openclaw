@@ -4,7 +4,7 @@ Docs: https://docs.openclaw.ai
 
 ## 2026.2.11
 
-_15:09 +04_
+_15:09 +04_ · _16:30 +04 debug CF Worker event payload_
 
 ### Docs
 
